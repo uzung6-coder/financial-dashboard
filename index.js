@@ -1,4 +1,4 @@
-const config = require('./config/config');
+require('dotenv').config();
 const axios = require('axios');
 const AdmZip = require('adm-zip');
 const xml2js = require('xml2js');
@@ -8,8 +8,8 @@ const path = require('path');
 // OpenDart API 클라이언트 클래스
 class OpenDartClient {
   constructor() {
-    this.apiKey = config.opendart.apiKey;
-    this.baseUrl = config.opendart.baseUrl;
+    this.apiKey = process.env.OPENDART_API_KEY;
+    this.baseUrl = 'https://opendart.fss.or.kr/api';
     
     if (!this.apiKey) {
       throw new Error('OpenDart API 키가 설정되지 않았습니다. .env 파일에 OPENDART_API_KEY를 설정해주세요.');
@@ -311,10 +311,10 @@ class OpenDartClient {
 async function main() {
   try {
     console.log('🚀 OpenDart API 클라이언트 시작');
-    console.log(`📋 환경: ${config.app.env}`);
-    console.log(`🔑 API 키 설정됨: ${config.opendart.apiKey ? '✅' : '❌'}`);
+    console.log(`📋 환경: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔑 API 키 설정됨: ${process.env.OPENDART_API_KEY ? '✅' : '❌'}`);
     
-    if (!config.opendart.apiKey) {
+    if (!process.env.OPENDART_API_KEY) {
       console.log('\n📝 설정 방법:');
       console.log('1. 프로젝트 루트에 .env 파일 생성');
       console.log('2. OPENDART_API_KEY=your_api_key_here 추가');
