@@ -16,12 +16,23 @@ app.use(express.static(path.join(__dirname, 'public')));
 let openDartClient;
 let companyService;
 
-try {
-  openDartClient = new OpenDartClient();
-  companyService = new CompanyService();
-  console.log('✅ 서비스 초기화 완료');
-} catch (error) {
-  console.error('❌ 서비스 초기화 실패:', error.message);
+async function initializeServices() {
+  try {
+    openDartClient = new OpenDartClient();
+    
+    // corp code 파일이 없으면 다운로드
+    console.log('📥 회사 코드 파일 확인 중...');
+    await openDartClient.downloadCorpCode();
+    
+    companyService = new CompanyService();
+    await companyService.loadCompanies();
+    
+    console.log('✅ 서비스 초기화 완료');
+    return true;
+  } catch (error) {
+    console.error('❌ 서비스 초기화 실패:', error.message);
+    return false;
+  }
 }
 
 // API 라우트
@@ -265,23 +276,45 @@ app.get('/api/health', (req, res) => {
   res.json({
     success: true,
     message: '서버가 정상적으로 실행 중입니다.',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: {
+      node_env: process.env.NODE_ENV,
+      port: process.env.PORT,
+      has_api_key: !!process.env.OPENDART_API_KEY,
+      companies_loaded: companyService && companyService.companies ? companyService.companies.length : 0
+    }
   });
 });
 
 // 서버 시작
-app.listen(PORT, () => {
-  console.log(`\n🚀 재무제표 시각화 서버가 실행되었습니다!`);
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`📊 API 문서: http://localhost:${PORT}/api/health`);
-  console.log('\n📋 사용 가능한 API:');
-  console.log('  GET  /api/companies/search?q=삼성');
-  console.log('  GET  /api/companies/popular');
-  console.log('  GET  /api/companies/:corpCode');
-  console.log('  GET  /api/companies/:corpCode/financials?year=2023');
-  console.log('  GET  /api/companies/:corpCode/financials/multi-year?start_year=2020&end_year=2023');
-  console.log('  GET  /api/companies/:corpCode/chart-data?start_year=2020&end_year=2023');
-});
+async function startServer() {
+  try {
+    const initialized = await initializeServices();
+    
+    if (!initialized) {
+      console.error('❌ 서비스 초기화 실패로 서버를 시작할 수 없습니다.');
+      process.exit(1);
+    }
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`\n🚀 재무제표 시각화 서버가 실행되었습니다!`);
+      console.log(`📍 URL: http://localhost:${PORT}`);
+      console.log(`📊 API 문서: http://localhost:${PORT}/api/health`);
+      console.log('\n📋 사용 가능한 API:');
+      console.log('  GET  /api/companies/search?q=삼성');
+      console.log('  GET  /api/companies/popular');
+      console.log('  GET  /api/companies/:corpCode');
+      console.log('  GET  /api/companies/:corpCode/financials?year=2023');
+      console.log('  GET  /api/companies/:corpCode/financials/multi-year?start_year=2020&end_year=2023');
+      console.log('  GET  /api/companies/:corpCode/chart-data?start_year=2020&end_year=2023');
+    });
+  } catch (error) {
+    console.error('❌ 서버 시작 실패:', error.message);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 // 프로세스 종료시 정리
 process.on('SIGINT', () => {
