@@ -3,7 +3,8 @@ services:
     name: financial-dashboard
     env: node
     plan: free
-    buildCommand: npm install
+    region: oregon
+    buildCommand: npm install --production
     startCommand: npm start
     envVars:
       - key: NODE_ENV
