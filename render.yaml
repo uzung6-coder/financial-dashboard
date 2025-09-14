@@ -12,4 +12,5 @@ services:
       - key: PORT
         value: 10000
       - key: OPENDART_API_KEY
-        sync: false
+        sync: 51a6323f6aafba68f6a1263c140043b5d3d42175
+
